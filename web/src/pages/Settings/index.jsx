@@ -890,6 +890,46 @@ export function Settings() {
             </Card>
           )}
 
+          <Card sm={10} lg={5} title='Shot Webhooks'>
+            <div className='mb-2 text-sm opacity-70'>
+              Configure a webhook to be called when a shot is completed. The shot data will be sent as
+              a POST request to the specified URL.
+            </div>
+
+            <div className='form-control'>
+              <label htmlFor='webhookUrl' className='mb-2 block text-sm font-medium'>
+                Webhook URL
+              </label>
+              <input
+                id='webhookUrl'
+                name='webhookUrl'
+                type='url'
+                className='input input-bordered w-full'
+                placeholder='https://example.com/webhook'
+                value={formData.webhookUrl || ''}
+                onChange={onChange('webhookUrl')}
+              />
+            </div>
+
+            <div className='form-control'>
+              <label htmlFor='webhookAuthToken' className='mb-2 block text-sm font-medium'>
+                Auth Token
+              </label>
+              <input
+                id='webhookAuthToken'
+                name='webhookAuthToken'
+                type='password'
+                className='input input-bordered w-full'
+                placeholder='Enter authentication token'
+                value={formData.webhookAuthToken || ''}
+                onChange={onChange('webhookAuthToken')}
+              />
+              <div className='mt-2 text-xs opacity-70'>
+                This token will be sent in the Authorization header as "Bearer {'<token>'}"
+              </div>
+            </div>
+          </Card>
+
           <Card sm={10} title='Plugins'>
             <PluginCard
               formData={formData}

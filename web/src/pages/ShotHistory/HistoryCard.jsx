@@ -8,6 +8,7 @@ import { faTrashCan } from '@fortawesome/free-solid-svg-icons/faTrashCan';
 import { faWeightScale } from '@fortawesome/free-solid-svg-icons/faWeightScale';
 import { faClock } from '@fortawesome/free-solid-svg-icons/faClock';
 import { faUpload } from '@fortawesome/free-solid-svg-icons/faUpload';
+import { faServer } from '@fortawesome/free-solid-svg-icons/faServer';
 import { faStar } from '@fortawesome/free-solid-svg-icons/faStar';
 import { faPlus } from '@fortawesome/free-solid-svg-icons/faPlus';
 import { faMinus } from '@fortawesome/free-solid-svg-icons/faMinus';
@@ -16,6 +17,7 @@ import { useConfirmAction } from '../../hooks/useConfirmAction.js';
 
 import VisualizerUploadModal from '../../components/VisualizerUploadModal.jsx';
 import { visualizerService } from '../../services/VisualizerService.js';
+import { webhookService } from '../../services/WebhookService.js';
 import { ApiServiceContext } from '../../services/ApiService.js';
 
 function round2(v) {
@@ -30,6 +32,7 @@ export default function HistoryCard({ shot, onDelete, onLoad, onNotesChanged }) 
   const { armed: confirmDelete, armOrRun: confirmOrDelete } = useConfirmAction(4000);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSendingWebhook, setIsSendingWebhook] = useState(false);
 
   const date = new Date(shot.timestamp * 1000);
 
@@ -124,6 +127,37 @@ export default function HistoryCard({ shot, onDelete, onLoad, onNotesChanged }) 
 
   const canUpload = visualizerService.validateShot(shot);
 
+  const handleSendWebhook = useCallback(async () => {
+    setIsSendingWebhook(true);
+    try {
+      // Fetch webhook settings
+      const settings = await webhookService.getWebhookSettings();
+
+      // Check if webhook is configured
+      if (!settings.url || settings.url.trim() === '') {
+        alert('Webhook URL is not configured. Please configure it in Settings.');
+        return;
+      }
+
+      // Validate webhook URL
+      if (!webhookService.validateWebhookUrl(settings.url)) {
+        alert('Invalid webhook URL. Please check your settings.');
+        return;
+      }
+
+      // Send webhook with shot data and notes
+      await webhookService.sendWebhook(shot, shotNotes);
+
+      // Show success message
+      alert('Webhook sent successfully!');
+    } catch (error) {
+      console.error('Webhook failed:', error);
+      alert(`Webhook failed: ${error.message}`);
+    } finally {
+      setIsSendingWebhook(false);
+    }
+  }, [shot, shotNotes]);
+
   return (
     <Card sm={12} className='[&>.card-body]:p-2'>
       <div className='flex flex-col gap-2'>
@@ -192,6 +226,20 @@ export default function HistoryCard({ shot, onDelete, onLoad, onNotesChanged }) 
                       aria-label='Upload to visualizer.coffee'
                     >
                       <FontAwesomeIcon icon={faUpload} />
+                    </button>
+                  </div>
+                  <div className='tooltip tooltip-left' data-tip='Send to Webhook'>
+                    <button
+                      onClick={handleSendWebhook}
+                      disabled={isSendingWebhook || !shot.loaded}
+                      className={`group inline-block items-center justify-between gap-2 rounded-md border border-transparent px-2.5 py-2 text-sm font-semibold ${
+                        shot.loaded
+                          ? 'text-primary hover:bg-primary/10 active:border-primary/20'
+                          : 'cursor-not-allowed text-gray-400'
+                      }`}
+                      aria-label='Send to webhook'
+                    >
+                      <FontAwesomeIcon icon={faServer} spin={isSendingWebhook} />
                     </button>
                   </div>
                   <div
